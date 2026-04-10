@@ -1,0 +1,455 @@
+
+
+
+
+
+WORD SURVIVORS
+PoC実装指示書 — Godot 4
+for Claude Code / ソロ開発
+2026年4月10日 / RandaWorks
+
+1. PoC概要
+本指示書は、Word SurvivorsのPoC（Proof of Concept）をGodot 4.xで実装するための技術仕様書です。Claude Codeでの開発を前提とし、各ファイルの役割・実装順序・具体的なコード仕様を記載します。
+
+1.1 PoCスコープ
+Stage 1のみ（単語プール200語）
+武器4種（名詞2 + 動詞2）
+武器進化2組（接尾辞 -tion, -er）
+シナジー3組
+段階的情報開示システム
+基本図鑑
+レベルアップシステム
+Web export対応（itch.io公開前提）
+
+1.2 技術スタック
+
+
+2. ディレクトリ構成
+
+res://
+├── project.godot
+├── export_presets.cfg
+├── src/
+│   ├── main/
+│   │   ├── main.tscn          # メインシーン（ゲームループ全体の親）
+│   │   └── main.gd
+│   ├── player/
+│   │   ├── player.tscn         # CharacterBody2D
+│   │   └── player.gd
+│   ├── enemy/
+│   │   ├── enemy.tscn          # CharacterBody2D
+│   │   ├── enemy.gd
+│   │   └── enemy_spawner.gd    # スポーナーロジック（SRS組み込み）
+│   ├── weapons/
+│   │   ├── weapon_base.gd      # 武器基底クラス
+│   │   ├── weapon_projectile.tscn
+│   │   ├── weapon_aura.tscn
+│   │   └── weapon_manager.gd   # 武器管理・進化判定
+│   ├── exp/
+│   │   ├── exp_gem.tscn        # EXPジェム（意味テキスト付き）
+│   │   └── exp_gem.gd
+│   ├── ui/
+│   │   ├── hud.tscn            # HPバー、レベル、タイマー
+│   │   ├── hud.gd
+│   │   ├── levelup_panel.tscn  # レベルアップ時の武器選択 UI
+│   │   ├── levelup_panel.gd
+│   │   ├── word_popup.tscn     # 敵撃破時の単語情報ポップアップ
+│   │   ├── word_popup.gd
+│   │   ├── dictionary_screen.tscn  # 図鑑画面
+│   │   ├── dictionary_screen.gd
+│   │   ├── title_screen.tscn
+│   │   ├── title_screen.gd
+│   │   ├── result_screen.tscn  # リザルト画面（覚えた単語一覧）
+│   │   └── result_screen.gd
+│   └── camera/
+│       ├── game_camera.tscn    # Camera2D（プレイヤー追従）
+│       └── game_camera.gd
+├── data/
+│   ├── words_stage1.json   # 単語データ（200語）
+│   ├── weapons.tres        # 武器定義Resource
+│   ├── evolutions.tres     # 進化テーブルResource
+│   └── synergies.tres      # シナジー定義Resource
+├── autoload/
+│   ├── game_manager.gd     # ゲーム状態管理（シングルトン）
+│   ├── word_database.gd    # 単語 DB 読み込み・検索・ SRS管理
+│   └── save_manager.gd     # セーブ/ロード
+└── assets/
+    ├── sprites/            # プレイヤー・敵・武器のドット絵
+    ├── fonts/              # 日本語対応フォント（Noto Sans JP推奨）
+    ├── audio/              # SE・BGM
+    └── themes/             # Godot UIテーマ
+
+3. 実装フェーズ（6スプリント）
+以下の順番で実装します。各フェーズ完了時に動作確認ができる状態にします。
+
+合計目安：10日前後（実質2週間）
+
+4. 各コンポーネント仕様
+4.1 単語データ構造 (words_stage1.json)
+200語をJSON配列で管理。各単語は以下のフィールドを持つ。
+
+{
+  "words": [
+    {
+      "id": "w001",
+      "en": "run",
+      "ja": "走る",
+      "pos": "verb",        // noun | verb | adjective | adverb
+      "level": 1,           // 1=小学校 2=中1前半 3=中1後半
+      "example": "I run every morning.",
+      "evolves_to": "runner", // 進化先のid (任意)
+      "evolution_passive": "suffix_er"  // 必要なパッシブid
+    },
+    ...
+  ],
+  "passives": [
+    {
+      "id": "suffix_er",
+      "display": "-er",
+      "description": "「〜する人」を作る接尾辞"
+    },
+    {
+      "id": "suffix_tion",
+      "display": "-tion",
+      "description": "動詞を名詞に変える接尾辞"
+    }
+  ],
+  "synergies": [
+    {
+      "word_a": "make",
+      "word_b": "decision",
+      "phrase": "make a decision",
+      "phrase_ja": "決断する",
+      "bonus": "crit_rate_up"
+    }
+  ]
+}
+
+4.2 Autoload: word_database.gd
+全単語データの読み込み、検索、SRSロジックを担当。
+
+主要プロパティ
+var all_words: Array[Dictionary]     # 全単語配列
+var word_stats: Dictionary           # {word_id: {encounter_count, last_seen, mastered}}
+var passives: Array[Dictionary]      # パッシブアイテム一覧
+var synergies: Array[Dictionary]     # シナジー一覧
+
+主要メソッド
+func load_words(path: String) -> void
+  # JSONを読み込みall_wordsに格納
+
+func get_random_word(pos_filter: String = "") -> Dictionary
+  # SRS重み付け: encounter_countが少ない or
+  # last_seenが古い単語を優先的に返す
+
+func record_encounter(word_id: String) -> int
+  # encounter_count++, last_seen更新
+  # 戻り値: 現在のencounter_count（段階表示に使用）
+
+func get_display_level(word_id: String) -> int
+  # encounter_countに基づく表示レベル (1-5)
+  # 1=英単語のみ, 2=+品詞, 3=+意味, 4=+例文, 5=マスター
+
+func check_synergy(weapon_ids: Array) -> Array[Dictionary]
+  # 現在装備中の武器からシナジー判定
+
+func check_evolution(weapon_id: String, owned_passives: Array) -> String
+  # 進化可能なら進化先のword_idを返す
+4.3 player.gd
+CharacterBody2Dベース。シンプルな8方向移動。
+
+ノード構成 (player.tscn)
+Player (CharacterBody2D)
+  ├─ Sprite2D           # プレイヤースプライト
+  ├─ CollisionShape2D   # 当たり判定
+  ├─ HurtBox (Area2D)   # ダメージ受信用
+  │   └─ CollisionShape2D
+  ├─ PickupArea (Area2D) # EXPジェム吸収範囲
+  │   └─ CollisionShape2D  # 円形 radius=80
+  └─ WeaponMount (Node2D) # 武器の親ノード
+
+主要プロパティ
+@export var move_speed: float = 200.0
+var max_hp: int = 100
+var current_hp: int = 100
+var level: int = 1
+var current_exp: int = 0
+var exp_to_next: int = 10  # レベルごとに増加
+var owned_passives: Array[String] = []  # 所持パッシブID
+var equipped_weapons: Array = []        # 装備中の武器ノード
+
+主要ロジック
+_physics_process: Input.get_vector()で移動ベクトル取得 → move_and_slide()
+PickupAreaのarea_enteredシグナルでEXPジェムを吸収
+add_exp(amount): EXP加算 → レベルアップ判定 → levelup_panel表示
+take_damage(amount): HP減算 → 0でゲームオーバー
+
+4.4 enemy.gd
+CharacterBody2Dベース。プレイヤーに向かって移動するだけのシンプルなAI。
+
+ノード構成 (enemy.tscn)
+Enemy (CharacterBody2D)
+  ├─ Sprite2D
+  ├─ CollisionShape2D
+  ├─ HitBox (Area2D)     # プレイヤーへのダメージ
+  │   └─ CollisionShape2D
+  ├─ HurtBox (Area2D)    # 武器からのダメージ受信
+  │   └─ CollisionShape2D
+  ├─ WordLabel (Label)   # 敵の頭上に英単語表示
+  └─ DamageTimer (Timer) # 接触ダメージのクールダウン
+
+主要プロパティ
+var word_data: Dictionary = {}  # WordDatabaseから渡される単語情報
+var hp: int = 10
+var move_speed: float = 60.0
+var damage: int = 5
+var exp_value: int = 1
+
+品詞別パラメータ
+
+難易度（word.level）による係数: HPとダメージに level * 1.3 を乗算。
+撃破時の段階的情報開示ロジック
+func die() -> void:
+    var count = WordDatabase.record_encounter(word_data.id)
+    var display_lv = WordDatabase.get_display_level(word_data.id)
+    # display_lvに応じてword_popupの表示内容を切替
+    # 1: enのみ / 2: en+品詞 / 3: en+ja / 4: en+例文 / 5: ★+ボーナスEXP
+    spawn_exp_gems()
+    spawn_word_popup(display_lv)
+    queue_free()
+4.5 exp_gem.gd
+EXPジェムは敵が死亡時に生成。プレイヤーのPickupAreaに入ると吸寄せられて回収される。
+
+# Area2Dベース
+var exp_amount: int = 1
+var is_being_collected: bool = false
+var collect_speed: float = 400.0
+
+func _physics_process(delta):
+    if is_being_collected:
+        var dir = (player_ref.global_position - global_position).normalized()
+        global_position += dir * collect_speed * delta
+        if global_position.distance_to(player_ref.global_position) < 10:
+            player_ref.add_exp(exp_amount)
+            queue_free()
+
+4.6 武器システム (weapon_manager.gd)
+武器は全て「英単語名」を持ち、品詞により攻撃タイプが決まる。
+
+PoCの武器4種
+
+進化判定ロジック
+func try_evolve(weapon_node) -> bool:
+    var word = weapon_node.word_data
+    if word.has("evolves_to") and word.has("evolution_passive"):
+        if word.evolution_passive in player.owned_passives:
+            if weapon_node.level >= 8:  # Lv8以上で進化可能
+                evolve_weapon(weapon_node, word.evolves_to)
+                return true
+    return false
+4.7 levelup_panel.gd
+レベルアップ時にゲームをポーズし、3択択を表示。武器名は英語、効果説明は日本語。
+
+選択肢の構成
+新規武器取得（最大6個まで）
+既存武器レベルアップ
+パッシブアイテム取得（接頭辞・接尾辞）
+ステータスUP（速度、HP、吸収範囲など）
+
+func show_choices():
+    get_tree().paused = true
+    var choices = generate_choices(3)
+    for i in range(3):
+        choice_buttons[i].setup(choices[i])
+    visible = true
+
+func _on_choice_selected(choice: Dictionary):
+    apply_choice(choice)
+    visible = false
+    get_tree().paused = false
+
+4.8 enemy_spawner.gd
+敵のスポーンに SRS ロジックを組み込む。
+
+# スポーンロジックの概要:
+# 1. タイマーで定期的に敵をスポーン
+# 2. WordDatabase.get_random_word() で単語を取得
+#    - SRS重み付けで「久しぶりの単語」が出やすい
+# 3. 品詞に応じた敵タイプを生成
+# 4. 画面外のランダム位置に配置
+
+var spawn_interval: float = 1.0  # 秒
+var max_enemies: int = 80
+var difficulty_timer: float = 0.0
+
+func _on_spawn_timer_timeout():
+    if get_tree().get_nodes_in_group("enemies").size() >= max_enemies:
+        return
+    var word = WordDatabase.get_random_word()
+    var enemy = enemy_scene.instantiate()
+    enemy.setup(word)
+    enemy.global_position = get_spawn_position()
+    add_child(enemy)
+
+func get_spawn_position() -> Vector2:
+    # プレイヤーから半径400〜600の円上のランダム位置
+    var angle = randf() * TAU
+    var dist = randf_range(400, 600)
+    return player.global_position + Vector2.from_angle(angle) * dist
+4.9 word_popup.gd
+敵撃破時に敵の位置にポップアップを表示。段階的情報開示の実際の表示部分。
+
+# 生成時に呼び出される
+func setup(word_data: Dictionary, display_level: int):
+    match display_level:
+        1: label.text = word_data.en
+        2: label.text = word_data.en + " [" + word_data.pos + "]"
+        3: label.text = word_data.en + " → " + word_data.ja
+        4: label.text = word_data.en + "\n" + word_data.example
+        5:
+            label.text = "★ " + word_data.en + " → " + word_data.ja
+            # ボーナスEXPパーティクル再生
+    # 上方にフロートしながら0.8秒でフェードアウト
+    var tween = create_tween()
+    tween.tween_property(self, "position:y", position.y - 30, 0.8)
+    tween.parallel().tween_property(self, "modulate:a", 0.0, 0.8)
+    tween.tween_callback(queue_free)
+4.10 game_manager.gd (Autoload)
+ランの経過時間、難易度曲線、ゲーム状態を管理。
+
+enum State { TITLE, PLAYING, PAUSED, LEVELUP, GAMEOVER, RESULT }
+var state: State = State.TITLE
+var run_time: float = 0.0        # ラン経過秒数
+var run_duration: float = 900.0  # 15分でクリア
+var words_encountered: Array = [] # 今ランで出会った単語
+var words_mastered: Array = []    # 今ランでマスターした単語
+
+signal game_over
+signal game_clear
+signal time_updated(time: float)
+
+5. コリジョンレイヤー設計
+
+6. 難易度曲線（15分ラン）
+
+7. Web Export設定
+以下の設定でHTML5エクスポートし、itch.ioで公開します。
+
+Project > Export > Web (HTML5) を追加
+Export Path: build/web/index.html
+Head Includeに viewport metaタグを追加（モバイル対応）
+itch.ioのプロジェクト設定: Kind=HTML, Viewport=640x360
+
+project.godot の重要設定
+[display]
+window/size/viewport_width=640
+window/size/viewport_height=360
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[rendering]
+textures/canvas_textures/default_texture_filter=0  # Nearest（ピクセルアート用）
+
+[input]
+# WASD + 矢印キーの両対応
+move_up = Key W, Key Up
+move_down = Key S, Key Down
+move_left = Key A, Key Left
+move_right = Key D, Key Right
+
+[autoload]
+GameManager = "*res://autoload/game_manager.gd"
+WordDatabase = "*res://autoload/word_database.gd"
+SaveManager = "*res://autoload/save_manager.gd"
+
+8. アセット仕様（最小構成）
+PoCは最小限のアセットで動作確認を優先。プレースホルダーは単色矩形でも可。
+
+9. Claude Code向け開発ノート
+
+9.1 ファイル作成の注意点
+.tscnファイルはGodotのテキスト形式。手書き可能だが複雑なので、.gdファイルを先に書いてGodotエディタでシーンを組み立てるのが安全
+Autoloadの登録はproject.godotに直接記述可能
+JSONデータはClaude Codeで全生成可能。学習指導要領準拠の単語リストを元に200語を選定
+
+9.2 実装優先度
+① まずプレイヤーが動いて敵が来て死ぬ状態を作る
+② 武器1種だけで敵が倒せる状態を作る
+③ EXPジェムとレベルアップを入れる
+④ 段階的情報開示を入れる
+⑤ 武器2種目以降を追加
+⑥ 進化・シナジーを入れる
+⑦ UI（タイトル、図鑑、リザルト）を入れる
+
+9.3 テスト基準
+プレイヤーが15分生存できるバランス
+同じ単語に5回以上遭遇42したらマスター判定が正しく動作
+武器進化が正しく発動
+シナジーボーナスが正しく適用
+図鑑にマスター単語が正しく登録
+Web exportでブラウザ動作確認
+日本語フォントが正しく表示
+
+=== TABLES ===
+
+--- Table 1 ---
+項目 | 仕様
+エンジン | Godot 4.6+ (2D)
+言語 | GDScript
+解像度 | 640x360 (stretch mode: canvas_items, aspect: expand)
+描画 | ドット絵 16x16 or 32x32 ピクセル
+物理エンジン | デフォルト（PoC段階。敵数100体以下で十分）
+データ形式 | 単語データ: JSON / 武器・進化データ: Resource (.tres)
+セーブ | ローカルストレージ（user://）JSON形式
+ビルドターゲット | HTML5 (Web) → Windows (Steam準備)
+
+--- Table 2 ---
+# | フェーズ | 内容 | 目安
+1 | 基盤 | プロジェクト設定、プレイヤー移動、カメラ | 1日
+2 | 敵・単語 | 単語JSON、敵スポーン、段階的情報開示 | 2日
+3 | 武器・EXP | 自動攻撃、EXPジェム、レベルアップ | 2日
+4 | 進化・シナジー | 武器進化、コロケーションシナジー | 2日
+5 | UI・図鑑 | タイトル、HUD、図鑑、リザルト | 2日
+6 | 磨き・ビルド | バランス調整、SE、Web export | 1日
+
+--- Table 3 ---
+品詞 | 基本HP | 速度 | ダメージ | スプライト色
+noun | 12 | 55 | 5 | 緑系
+verb | 8 | 80 | 8 | 赤系
+adjective | 15 | 45 | 3 | 青系
+adverb | 6 | 50 | 2 | 黄系
+
+--- Table 4 ---
+武器名 | 品詞 | 攻撃タイプ | 挙動 | 進化先
+fire | noun | Projectile | 前方に火の球を飛ばす | fire + -er → "fighter"
+ice | noun | Projectile | 最寄りの敵に氷弾 | ice + -tion → (DLC用)
+slash | verb | Melee/Aura | 周囲に斬撃波 | slash + -er → "slasher"
+blast | verb | AoE | ランダム位置に爆発 | blast + -tion → (DLC用)
+
+--- Table 5 ---
+レイヤー | 名前 | 用途
+1 | Player | プレイヤーのCharacterBody2D
+2 | Enemy | 敵のCharacterBody2D
+3 | PlayerHurt | プレイヤーのHurtBox。敵のHitBoxと反応
+4 | EnemyHurt | 敵のHurtBox。武器のHitBoxと反応
+5 | Weapon | 武器のHitBox。EnemyHurtをマスク
+6 | Pickup | EXPジェム。PlayerのPickupAreaと反応
+
+--- Table 6 ---
+時間 | スポーン間隔 | 最大敵数 | 単語level | ボス出現 | イベント
+0-3分 | 1.2秒 | 30 | 1 | なし | チュートリアル
+3-6分 | 1.0秒 | 50 | 1-2 | なし | 
+6-9分 | 0.8秒 | 60 | 1-2 | 5分毎にボス | 
+9-12分 | 0.6秒 | 70 | 1-3 | 5分毎にボス | エリート混在
+12-15分 | 0.4秒 | 80 | 1-3 | 15分に最終ボス | 無双タイム
+
+--- Table 7 ---
+アセット | サイズ | 備考
+プレイヤー | 16x16 | 4方向アニメーション（各4フレーム）または単一スプライト
+敵×4品詞 | 16x16 | 品詞ごとに色違い。難易度でサイズ変更
+敵×3難易度 | 16/24/32 | levelに応じてスケール変更で対応可
+武器弾 | 8x8 | 火球、氷弾、斬撃波、爆発
+EXPジェム | 8x8 | 小・中・大の3種
+フォント | - | Noto Sans JP（日本語対応必須）+ Noto Sans Mono（英単語用）
+BGM | OGG | ループ再生。フリー素材で可
+SE | WAV | 撃破、レベルアップ、武器発射、ダメージ、ジェム回収

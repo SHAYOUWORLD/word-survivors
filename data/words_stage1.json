@@ -1,0 +1,29 @@
+{
+  "stage_id": 1,
+  "stage_name": "準1級テスト",
+  "words": [
+    { "id": "alleviate",     "english": "alleviate",     "japanese": "軽減する",     "pos": "verb",      "level": 5 },
+    { "id": "scrutinize",    "english": "scrutinize",    "japanese": "精査する",     "pos": "verb",      "level": 5 },
+    { "id": "procrastinate", "english": "procrastinate", "japanese": "先延ばしにする","pos": "verb",      "level": 5 },
+    { "id": "exacerbate",    "english": "exacerbate",    "japanese": "悪化させる",   "pos": "verb",      "level": 5 },
+    { "id": "reconcile",     "english": "reconcile",     "japanese": "和解させる",   "pos": "verb",      "level": 5 },
+
+    { "id": "predicament",   "english": "predicament",   "japanese": "苦境",         "pos": "noun",      "level": 5 },
+    { "id": "epitome",       "english": "epitome",       "japanese": "典型",         "pos": "noun",      "level": 5 },
+    { "id": "ramification",  "english": "ramification",  "japanese": "波及効果",     "pos": "noun",      "level": 5 },
+    { "id": "hindrance",     "english": "hindrance",     "japanese": "妨げ",         "pos": "noun",      "level": 5 },
+    { "id": "conundrum",     "english": "conundrum",     "japanese": "難問",         "pos": "noun",      "level": 5 },
+
+    { "id": "meticulous",    "english": "meticulous",    "japanese": "几帳面な",     "pos": "adjective", "level": 5 },
+    { "id": "ambiguous",     "english": "ambiguous",     "japanese": "曖昧な",       "pos": "adjective", "level": 5 },
+    { "id": "arduous",       "english": "arduous",       "japanese": "骨の折れる",   "pos": "adjective", "level": 5 },
+    { "id": "tenacious",     "english": "tenacious",     "japanese": "粘り強い",     "pos": "adjective", "level": 5 },
+    { "id": "candid",        "english": "candid",        "japanese": "率直な",       "pos": "adjective", "level": 5 },
+
+    { "id": "vehemently",    "english": "vehemently",    "japanese": "激しく",       "pos": "adverb",    "level": 5 },
+    { "id": "ostensibly",    "english": "ostensibly",    "japanese": "表向きは",     "pos": "adverb",    "level": 5 },
+    { "id": "inadvertently", "english": "inadvertently", "japanese": "うっかりと",   "pos": "adverb",    "level": 5 },
+    { "id": "sporadically",  "english": "sporadically",  "japanese": "散発的に",     "pos": "adverb",    "level": 5 },
+    { "id": "unequivocally", "english": "unequivocally", "japanese": "明白に",       "pos": "adverb",    "level": 5 }
+  ]
+}

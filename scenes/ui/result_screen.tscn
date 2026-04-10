@@ -1,0 +1,117 @@
+[gd_scene load_steps=2 format=3 uid="uid://cresv2a"]
+
+[ext_resource type="Script" path="res://scripts/ui/result_screen.gd" id="1_res"]
+
+[node name="ResultScreen" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_res")
+
+[node name="BG" type="ColorRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.05, 0.06, 0.1, 1)
+
+[node name="Title" type="Label" parent="."]
+anchor_left = 0.5
+anchor_top = 0.02
+anchor_right = 0.5
+anchor_bottom = 0.02
+offset_left = -500.0
+offset_right = 500.0
+offset_bottom = 100.0
+theme_override_font_sizes/font_size = 72
+theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+horizontal_alignment = 1
+text = "GAME OVER"
+
+[node name="Stats" type="Label" parent="."]
+anchor_left = 0.5
+anchor_top = 0.11
+anchor_right = 0.5
+anchor_bottom = 0.11
+offset_left = -700.0
+offset_right = 700.0
+offset_bottom = 40.0
+theme_override_font_sizes/font_size = 24
+theme_override_colors/font_color = Color(0.85, 0.9, 1, 1)
+horizontal_alignment = 1
+text = "プレイ時間: 00:00 | 撃破: 0 | クリティカル: 0"
+
+[node name="QuizPanel" type="PanelContainer" parent="."]
+anchor_left = 0.5
+anchor_top = 0.2
+anchor_right = 0.5
+anchor_bottom = 0.2
+offset_left = -700.0
+offset_right = 700.0
+offset_bottom = 720.0
+
+[node name="VBox" type="VBoxContainer" parent="QuizPanel"]
+theme_override_constants/separation = 18
+
+[node name="Progress" type="Label" parent="QuizPanel/VBox"]
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(1, 0.9, 0.4, 1)
+horizontal_alignment = 1
+text = "問題 0 / 0"
+
+[node name="Question" type="Label" parent="QuizPanel/VBox"]
+theme_override_font_sizes/font_size = 48
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+horizontal_alignment = 1
+text = "「-」 の意味は？"
+
+[node name="Choices" type="VBoxContainer" parent="QuizPanel/VBox"]
+alignment = 1
+theme_override_constants/separation = 10
+
+[node name="Feedback" type="Label" parent="QuizPanel/VBox"]
+theme_override_font_sizes/font_size = 28
+horizontal_alignment = 1
+text = ""
+
+[node name="SummaryPanel" type="PanelContainer" parent="."]
+anchor_left = 0.5
+anchor_top = 0.16
+anchor_right = 0.5
+anchor_bottom = 0.16
+offset_left = -720.0
+offset_right = 720.0
+offset_bottom = 820.0
+
+[node name="VBox" type="VBoxContainer" parent="SummaryPanel"]
+theme_override_constants/separation = 16
+
+[node name="SummaryLabel" type="Label" parent="SummaryPanel/VBox"]
+theme_override_font_sizes/font_size = 40
+theme_override_colors/font_color = Color(1, 0.95, 0.6, 1)
+horizontal_alignment = 1
+text = "正答率: 0 / 0 (0%)"
+
+[node name="CorrelationLabel" type="Label" parent="SummaryPanel/VBox"]
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(0.85, 0.95, 1, 1)
+horizontal_alignment = 1
+text = "-"
+
+[node name="Scroll" type="ScrollContainer" parent="SummaryPanel/VBox"]
+custom_minimum_size = Vector2(0, 360)
+
+[node name="List" type="VBoxContainer" parent="SummaryPanel/VBox/Scroll"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="Buttons" type="HBoxContainer" parent="SummaryPanel/VBox"]
+alignment = 1
+theme_override_constants/separation = 30
+
+[node name="RetryButton" type="Button" parent="SummaryPanel/VBox/Buttons"]
+custom_minimum_size = Vector2(220, 56)
+text = "RETRY"
+
+[node name="QuitButton" type="Button" parent="SummaryPanel/VBox/Buttons"]
+custom_minimum_size = Vector2(220, 56)
+text = "QUIT"

@@ -1,0 +1,47 @@
+[gd_scene load_steps=3 format=3 uid="uid://cenemyv2a"]
+
+[ext_resource type="Script" path="res://scripts/enemy.gd" id="1_enemy"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_enemy"]
+size = Vector2(80, 40)
+
+[node name="Enemy" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("1_enemy")
+
+[node name="BG" type="ColorRect" parent="."]
+offset_left = -40.0
+offset_top = -20.0
+offset_right = 40.0
+offset_bottom = 20.0
+color = Color(0.1, 0.1, 0.1, 0.7)
+
+[node name="Label" type="Label" parent="."]
+offset_left = -200.0
+offset_top = -48.0
+offset_right = 200.0
+offset_bottom = 0.0
+theme_override_font_sizes/font_size = 40
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "？"
+
+[node name="HintLabel" type="Label" parent="."]
+offset_left = -200.0
+offset_top = 2.0
+offset_right = 200.0
+offset_bottom = 30.0
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(0.67, 0.67, 0.67, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+horizontal_alignment = 1
+vertical_alignment = 1
+text = ""
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_enemy")

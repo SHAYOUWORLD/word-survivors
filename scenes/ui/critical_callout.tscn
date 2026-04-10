@@ -1,0 +1,53 @@
+[gd_scene load_steps=2 format=3 uid="uid://ccritv2a"]
+
+[ext_resource type="Script" path="res://scripts/critical_callout.gd" id="1_crit"]
+
+[node name="CriticalCallout" type="CanvasLayer"]
+layer = 20
+script = ExtResource("1_crit")
+
+[node name="Root" type="Control" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Flash" type="ColorRect" parent="Root"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(1, 1, 1, 1)
+
+[node name="VBox" type="VBoxContainer" parent="Root"]
+anchor_left = 0.5
+anchor_top = 0.4
+anchor_right = 0.5
+anchor_bottom = 0.4
+offset_left = -600.0
+offset_top = -80.0
+offset_right = 600.0
+offset_bottom = 80.0
+pivot_offset = Vector2(600, 80)
+alignment = 1
+
+[node name="EN" type="Label" parent="Root/VBox"]
+theme_override_font_sizes/font_size = 96
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 12
+horizontal_alignment = 1
+text = "run"
+
+[node name="EQ" type="Label" parent="Root/VBox"]
+theme_override_font_sizes/font_size = 56
+theme_override_colors/font_color = Color(1, 0.9, 0.4, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+horizontal_alignment = 1
+text = "＝"
+
+[node name="JA" type="Label" parent="Root/VBox"]
+theme_override_font_sizes/font_size = 96
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 12
+horizontal_alignment = 1
+text = "走る"
