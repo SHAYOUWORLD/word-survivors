@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git clone:*)",
+      "Bash(git init:*)",
+      "Bash(git remote:*)",
+      "Bash(git fetch:*)",
+      "Bash(git reset:*)",
+      "Bash(git -C /c/dev/word-survivors branch -a)",
+      "Bash(git -C /c/dev/word-survivors log --oneline -10)"
+    ]
+  }
+}
