@@ -1,8 +1,8 @@
 extends Area2D
-## Bullet = an English word flying toward an enemy. Carries its own word dict
-## and delegates hit judgment to HitJudge.
-
-const HitJudge := preload("res://scripts/hit_judge.gd")
+## Bullet = a Japanese word flying toward an enemy. pocv5: the bullet kills
+## an enemy only if its word id matches the enemy's word id (i.e. the JA
+## bullet means the EN enemy). Non-matching enemies are ignored and the
+## bullet passes through them.
 
 var word_data: Dictionary = {}
 var velocity: Vector2 = Vector2.ZERO
@@ -22,13 +22,10 @@ func setup(word: Dictionary, vel: Vector2, life: float = 2.0) -> void:
 	velocity = vel
 	lifetime = life
 	var color: Color = WordDatabase.get_pos_color(word.get("pos", "noun"))
-	# pocv4: bullets carry the ENGLISH word, matching the enemies the player
-	# is shooting at. Critical hits (same id) become a visually direct
-	# en=en collision, while the JA payoff comes via the critical callout.
 	if is_node_ready():
-		_apply_visuals(word.get("english", "?"), color)
+		_apply_visuals(word.get("japanese", "?"), color)
 	else:
-		call_deferred("_apply_visuals", word.get("english", "?"), color)
+		call_deferred("_apply_visuals", word.get("japanese", "?"), color)
 
 func _apply_visuals(text: String, color: Color) -> void:
 	label.text = text
@@ -41,8 +38,6 @@ func _physics_process(delta: float) -> void:
 		queue_free()
 		return
 	global_position += velocity * delta
-	# Gentle rotation for visual life.
-	rotation = velocity.angle() * 0.0
 
 func _on_body_entered(body: Node) -> void:
 	var enemy := body
@@ -50,19 +45,20 @@ func _on_body_entered(body: Node) -> void:
 		return
 	if not enemy.is_in_group("enemies") or not enemy.has_method("take_damage"):
 		return
-	var bullet_pos: String = word_data.get("pos", "")
-	var hit_type: int = HitJudge.judge(word_data, enemy.word_data)
-	var dmg: int = HitJudge.damage_for(hit_type) + PosUpgrades.bonus_damage(bullet_pos, hit_type)
-	enemy.take_damage(dmg, hit_type, word_data)
 	_hit_enemies.append(enemy)
 
-	# Tell the main scene to play feedback for this hit.
-	var main: Node = get_tree().current_scene
-	if main and main.has_method("on_bullet_hit"):
-		main.on_bullet_hit(hit_type, word_data, enemy.word_data, enemy.global_position)
+	var bullet_id: String = word_data.get("id", "")
+	var enemy_id: String = enemy.word_data.get("id", "")
+	if bullet_id == "" or bullet_id != enemy_id:
+		# Mismatch: bullet passes through harmlessly. Don't even play feedback.
+		return
 
-	# Pierce: the bullet can keep flying through up to N enemies. Default
-	# hit_budget is 1 (no pierce); each pierce upgrade on this POS adds one
-	# more enemy.
-	if _hit_enemies.size() >= PosUpgrades.hit_budget(bullet_pos):
-		queue_free()
+	# Match: instakill.
+	enemy.take_damage(999, word_data)
+
+	var main: Node = get_tree().current_scene
+	if main and main.has_method("on_bullet_match"):
+		main.on_bullet_match(word_data, enemy.word_data, enemy.global_position)
+
+	# One kill per bullet — disappear on the matched kill.
+	queue_free()

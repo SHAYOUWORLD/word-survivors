@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://cquizv4a"]
+[gd_scene load_steps=2 format=3 uid="uid://cqui0v4a"]
 
 [ext_resource type="Script" path="res://scripts/ui/quiz_panel.gd" id="1_quiz"]
 
