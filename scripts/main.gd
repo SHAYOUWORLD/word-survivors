@@ -1,10 +1,13 @@
 extends Node2D
-## Main gameplay scene for v2.0 PoC.
+## Main gameplay scene for pocv4.
 ## Responsibilities:
-## - Wires player, spawner, camera, HUD, levelup UI, critical callout
+## - Wires player, spawner, camera, HUD, levelup UI, critical callout, quiz panel
 ## - Drives the 5-minute run
 ## - Receives bullet-hit events via on_bullet_hit() and dispatches feedback:
 ##   damage numbers, particles, screen shake, hitstop, critical callout, SE
+## - Handles the pocv4 quiz flow: kill 4 on a word (or any kill during review)
+##   triggers a 4-choice JA->EN quiz. Correct = big explosion clearing all
+##   enemies + schedule reviews. Wrong = word resets to kill_count 0.
 
 const HitJudge := preload("res://scripts/hit_judge.gd")
 const FxSpawner := preload("res://scripts/fx_spawner.gd")
@@ -16,6 +19,7 @@ const DAMAGE_NUMBER_SCENE := preload("res://scenes/damage_number.tscn")
 @onready var hud: CanvasLayer = $HUD
 @onready var levelup_ui: CanvasLayer = $LevelUpUI
 @onready var critical_callout: CanvasLayer = $CriticalCallout
+@onready var quiz_panel: CanvasLayer = $QuizPanel
 @onready var grid: Node2D = $Grid
 
 var _shake_amount: float = 0.0
@@ -26,6 +30,7 @@ func _ready() -> void:
 	GameManager.start_run()
 	LearningTracker.start_run()
 	MasteryTracker.reset_run()
+	PosUpgrades.reset_run()
 
 	var bs: Node = player.get_node("BulletSystem")
 	bs.attach_to_player(player)
@@ -41,7 +46,8 @@ func _ready() -> void:
 	player.level_up.connect(_on_player_level_up)
 	player.died.connect(_on_player_died)
 	player.hit_taken.connect(_on_player_hit)
-	levelup_ui.choice_selected.connect(_on_levelup_choice)
+	levelup_ui.result_chosen.connect(_on_levelup_result)
+	quiz_panel.answered.connect(_on_quiz_answered)
 
 	AudioManager.play_bgm("gameplay", 0.6)
 
@@ -122,16 +128,20 @@ func _on_player_hit() -> void:
 
 func _on_player_level_up() -> void:
 	GameManager.set_state(GameManager.State.LEVELUP)
-	var bs: Node = player.get_node("BulletSystem")
-	levelup_ui.show_choices(bs.get_held_word_ids())
+	levelup_ui.show_levelup()
 
-func _on_levelup_choice(word_id: String, offered: Array) -> void:
-	LearningTracker.record_levelup_choice(GameManager.run_time, offered, word_id)
-	var w: Dictionary = WordDatabase.get_word(word_id)
-	var bs: Node = player.get_node("BulletSystem")
-	bs.add_word(w)
+## Simplified pocv4 levelup flow: pick a POS, then pick a stat. The chosen
+## POS gets +1 to that stat, applied to every bullet of that POS.
+func _on_levelup_result(pos: String, upgrade_stat: int) -> void:
+	LearningTracker.record_levelup_choice(
+		GameManager.run_time,
+		[pos],
+		pos
+	)
+	if pos != "" and upgrade_stat >= 0:
+		PosUpgrades.apply_upgrade(pos, upgrade_stat)
+		FxSpawner.spawn_levelup_beam(self, player.global_position)
 	GameManager.set_state(GameManager.State.PLAYING)
-	FxSpawner.spawn_levelup_beam(self, player.global_position)
 
 func _on_player_died() -> void:
 	GameManager.trigger_game_over()
@@ -141,3 +151,84 @@ func _goto_result(survived: bool) -> void:
 	set_process(false)
 	await get_tree().create_timer(0.8).timeout
 	get_tree().change_scene_to_file("res://scenes/ui/result_screen.tscn")
+
+# ---------- pocv4 quiz flow ----------
+
+## Called from enemy.die() when MasteryTracker says the kill should open a
+## quiz (4th kill in PHASE_A, or any kill during REVIEW_DUE).
+func on_enemy_triggered_quiz(word_data: Dictionary, is_review: bool, _enemy_pos: Vector2) -> void:
+	GameManager.set_state(GameManager.State.QUIZ)
+	quiz_panel.show_quiz(word_data, is_review)
+
+func _on_quiz_answered(word_id: String, correct: bool, _is_review: bool) -> void:
+	var word: Dictionary = WordDatabase.get_word(word_id)
+	if correct:
+		MasteryTracker.mark_quiz_correct(word_id, GameManager.run_time)
+		GameManager.set_state(GameManager.State.PLAYING)
+		_play_big_explosion(word)
+		if MasteryTracker.all_mastered(_all_word_ids()):
+			# All words fully mastered — trigger game clear after the
+			# explosion has had a moment to play.
+			await get_tree().create_timer(1.6).timeout
+			GameManager.trigger_survive()
+	else:
+		MasteryTracker.mark_quiz_wrong(word_id)
+		GameManager.set_state(GameManager.State.PLAYING)
+		# Brief visual acknowledgment: small shake + sfx. The word is now
+		# back in PHASE_A — no extra bookkeeping required here.
+		shake(8.0)
+		AudioManager.play_sfx("damage")
+
+## Clears every on-screen enemy with a cascading burst effect, shakes the
+## screen hard, and stacks the audio for maximum dopamine. Used when the
+## quiz is answered correctly.
+func _play_big_explosion(word: Dictionary) -> void:
+	var color: Color = WordDatabase.get_pos_color(word.get("pos", "noun"))
+	color.a = 1.0
+
+	# Central mega burst at the player.
+	if player and is_instance_valid(player):
+		FxSpawner.spawn_mega_burst(self, player.global_position, color)
+		FxSpawner.spawn_sparkles(self, player.global_position, Color(1, 0.95, 0.6, 1))
+
+	# Wipe every enemy with a per-enemy burst. Do NOT call die() — we don't
+	# want mastery-side effects from these kills.
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if not is_instance_valid(e):
+			continue
+		var en: Node2D = e
+		# All nodes in the "enemies" group are instances of enemy.tscn and
+		# expose word_data. Access the variant property directly.
+		var val = en.get("word_data")
+		var en_pos_name: String = "noun"
+		if val is Dictionary:
+			en_pos_name = (val as Dictionary).get("pos", "noun")
+		var en_color: Color = WordDatabase.get_pos_color(en_pos_name)
+		en_color.a = 1.0
+		FxSpawner.spawn_burst(self, en.global_position, en_color, 14, 1.0)
+		GameManager.register_kill()
+		en.queue_free()
+
+	# Shake + hitstop for weight.
+	shake(22.0)
+	_hitstop(0.08)
+
+	# Audio stack.
+	AudioManager.play_sfx("boom", 0.0, 0.0)
+	AudioManager.play_sfx("hit_heavy", 0.0, -2.0)
+	AudioManager.play_sfx("synergy", 0.0, -4.0)
+
+	# Big visual callout: english == japanese, like a critical hit, to burn
+	# the pair in at the mastery moment.
+	critical_callout.show_pair(
+		word.get("english", ""),
+		word.get("japanese", ""),
+		color,
+		word.get("id", "")
+	)
+
+func _all_word_ids() -> Array:
+	var out: Array = []
+	for w in WordDatabase.all_words:
+		out.append(w.get("id", ""))
+	return out

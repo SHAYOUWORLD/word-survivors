@@ -80,12 +80,17 @@ func _fire_next() -> void:
 	else:
 		dir = (target.global_position - player.global_position).normalized()
 
+	# Apply per-POS speed upgrade (each point = +25% velocity).
+	var word_id: String = word.get("id", "")
+	var word_pos: String = word.get("pos", "")
+	var speed: float = BULLET_SPEED * PosUpgrades.velocity_multiplier(word_pos)
+
 	var b = BULLET_SCENE.instantiate()
 	get_tree().current_scene.add_child(b)
 	b.global_position = player.global_position
-	b.setup(word, dir * BULLET_SPEED, BULLET_LIFETIME)
+	b.setup(word, dir * speed, BULLET_LIFETIME)
 
-	LearningTracker.record_fire(word.get("id", ""))
+	LearningTracker.record_fire(word_id)
 	fired.emit()
 
 func _nearest_enemy() -> Node2D:

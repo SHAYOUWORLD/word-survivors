@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://cmainv2a"]
+[gd_scene load_steps=10 format=3 uid="uid://cmainv2a"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" uid="uid://cplayerv2a" path="res://scenes/player.tscn" id="2_player"]
@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://ccritv2a" path="res://scenes/ui/critical_callout.tscn" id="5_crit"]
 [ext_resource type="Script" path="res://scripts/enemy_spawner.gd" id="6_spawn"]
 [ext_resource type="Script" path="res://scripts/grid_bg.gd" id="7_grid"]
+[ext_resource type="PackedScene" uid="uid://cquizv4a" path="res://scenes/ui/quiz_panel.tscn" id="8_quiz"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -29,3 +30,5 @@ script = ExtResource("6_spawn")
 [node name="LevelUpUI" parent="." instance=ExtResource("4_lvup")]
 
 [node name="CriticalCallout" parent="." instance=ExtResource("5_crit")]
+
+[node name="QuizPanel" parent="." instance=ExtResource("8_quiz")]

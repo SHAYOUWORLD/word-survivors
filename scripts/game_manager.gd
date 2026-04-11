@@ -1,9 +1,13 @@
 extends Node
 ## Global run state: timer, phase (difficulty), kills, signals.
+##
+## pocv4: the run is open-ended. It ends only when every word reaches
+## FULLY_MASTERED (triggers survive) or the player dies (game over).
+## RUN_DURATION is kept only as a fallback display hint and safety cap.
 
-enum State { PLAYING, LEVELUP, GAMEOVER, RESULT }
+enum State { PLAYING, LEVELUP, QUIZ, GAMEOVER, RESULT }
 
-const RUN_DURATION: float = 300.0  # 5 minutes
+const RUN_DURATION: float = 1800.0  # 30 minutes — hard safety cap only
 
 var state: int = State.PLAYING
 var run_time: float = 0.0

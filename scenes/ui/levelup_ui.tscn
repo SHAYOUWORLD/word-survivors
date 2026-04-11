@@ -4,7 +4,7 @@
 
 [node name="LevelUpUI" type="CanvasLayer"]
 process_mode = 3
-layer = 10
+layer = 20
 script = ExtResource("1_lvup")
 
 [node name="Root" type="Control" parent="."]
@@ -23,19 +23,40 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -600.0
-offset_top = -180.0
-offset_right = 600.0
-offset_bottom = 180.0
+offset_left = -680.0
+offset_top = -320.0
+offset_right = 680.0
+offset_bottom = 320.0
 
 [node name="VBox" type="VBoxContainer" parent="Root/Panel"]
+theme_override_constants/separation = 18
 
-[node name="Title" type="Label" parent="Root/Panel/VBox"]
+[node name="Header" type="Label" parent="Root/Panel/VBox"]
 theme_override_font_sizes/font_size = 40
 theme_override_colors/font_color = Color(1, 0.9, 0.4, 1)
 horizontal_alignment = 1
 text = "LEVEL UP"
 
+[node name="SubHeader" type="Label" parent="Root/Panel/VBox"]
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(0.85, 0.85, 0.95, 1)
+horizontal_alignment = 1
+text = "この英単語はどれ？"
+
+[node name="Prompt" type="Label" parent="Root/Panel/VBox"]
+theme_override_font_sizes/font_size = 80
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 10
+horizontal_alignment = 1
+text = "意味"
+
 [node name="Row" type="HBoxContainer" parent="Root/Panel/VBox"]
 alignment = 1
 theme_override_constants/separation = 24
+
+[node name="Feedback" type="Label" parent="Root/Panel/VBox"]
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+horizontal_alignment = 1
+text = ""
