@@ -25,6 +25,7 @@ WordDatabase="*res://scripts/word_database.gd"
 GameManager="*res://scripts/game_manager.gd"
 LearningTracker="*res://scripts/learning_tracker.gd"
 MasteryTracker="*res://scripts/mastery_tracker.gd"
+PosUpgrades="*res://scripts/pos_upgrades.gd"
 
 [debug]
 

@@ -47,8 +47,10 @@ func _on_hp_changed(cur: int, maxv: int) -> void:
 	hp_label.text = "%d / %d" % [cur, maxv]
 
 func _on_time_updated(_t: float) -> void:
-	time_label.text = GameManager.format_time(GameManager.remaining())
-	kills_label.text = "%d 体" % GameManager.kills
+	time_label.text = GameManager.format_time(GameManager.run_time)
+	var total: int = WordDatabase.all_words.size()
+	var mastered: int = MasteryTracker.mastered_count()
+	kills_label.text = "マスター %d / %d" % [mastered, total]
 
 func _refresh_slots() -> void:
 	for c in slot_strip.get_children():
@@ -91,7 +93,8 @@ func _make_queue_item(word: Dictionary, is_next: bool) -> Control:
 	sb.content_margin_bottom = 10
 	panel.add_theme_stylebox_override("panel", sb)
 	var lbl := Label.new()
-	lbl.text = word.get("japanese", "")
+	# pocv4: bullets are english-labeled now, so the queue preview matches.
+	lbl.text = word.get("english", "")
 	lbl.add_theme_color_override("font_color", color)
 	lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 	lbl.add_theme_constant_override("outline_size", 4)
@@ -113,7 +116,7 @@ func _make_slot(word: Dictionary) -> Control:
 	sb.content_margin_bottom = 4
 	panel.add_theme_stylebox_override("panel", sb)
 	var lbl := Label.new()
-	lbl.text = word.get("japanese", "")
+	lbl.text = word.get("english", "")
 	lbl.add_theme_color_override("font_color", color)
 	lbl.add_theme_font_size_override("font_size", 20)
 	panel.add_child(lbl)

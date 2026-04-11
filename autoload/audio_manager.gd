@@ -42,8 +42,11 @@ var _sfx_players: Array[AudioStreamPlayer] = []
 var _sfx_cache: Dictionary = {}
 var _bgm_cache: Dictionary = {}
 
-var bgm_volume_db: float = -6.0
-var sfx_volume_db: float = -4.0
+var bgm_volume_db: float = -14.0
+var sfx_volume_db: float = -12.0
+## Pronunciation voice sits much louder than SFX so the word the player is
+## learning cuts cleanly through the soundscape.
+var voice_volume_db: float = 0.0
 
 func _ready() -> void:
 	_bgm_a = _make_bgm_player("BGM_A")
@@ -160,7 +163,9 @@ func play_voice(word_id: String, volume_offset: float = 0.0) -> void:
 		return
 	var player := _get_free_sfx_player()
 	player.stream = stream
-	player.volume_db = sfx_volume_db + volume_offset
+	# Voice uses its own (much louder) volume knob so the pronunciation sits
+	# well above SFX and BGM.
+	player.volume_db = voice_volume_db + volume_offset
 	player.pitch_scale = 1.0
 	player.play()
 

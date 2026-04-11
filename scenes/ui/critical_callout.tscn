@@ -14,6 +14,7 @@ mouse_filter = 2
 [node name="Flash" type="ColorRect" parent="Root"]
 anchor_right = 1.0
 anchor_bottom = 1.0
+mouse_filter = 2
 color = Color(1, 1, 1, 1)
 
 [node name="VBox" type="VBoxContainer" parent="Root"]
@@ -25,10 +26,12 @@ offset_left = -600.0
 offset_top = -80.0
 offset_right = 600.0
 offset_bottom = 80.0
+mouse_filter = 2
 pivot_offset = Vector2(600, 80)
 alignment = 1
 
 [node name="EN" type="Label" parent="Root/VBox"]
+mouse_filter = 2
 theme_override_font_sizes/font_size = 96
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
@@ -37,6 +40,7 @@ horizontal_alignment = 1
 text = "run"
 
 [node name="EQ" type="Label" parent="Root/VBox"]
+mouse_filter = 2
 theme_override_font_sizes/font_size = 56
 theme_override_colors/font_color = Color(1, 0.9, 0.4, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
@@ -45,6 +49,7 @@ horizontal_alignment = 1
 text = "＝"
 
 [node name="JA" type="Label" parent="Root/VBox"]
+mouse_filter = 2
 theme_override_font_sizes/font_size = 96
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
