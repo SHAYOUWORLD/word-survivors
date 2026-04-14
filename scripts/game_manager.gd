@@ -5,7 +5,7 @@ extends Node
 
 enum State { PLAYING, QUIZ, GAMEOVER, RESULT }
 
-const KILLS_PER_QUIZ: int = 10
+const KILLS_PER_QUIZ: int = 20
 const RECENT_KILLS_CAP: int = 32
 
 var state: int = State.PLAYING

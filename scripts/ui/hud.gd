@@ -73,9 +73,15 @@ func _refresh_slots() -> void:
 	var bs: Node = _player.get_node("BulletSystem")
 	if bs == null:
 		return
-	var active_idx: int = bs.active_idx
+	var group_size: int = bs.GROUP_SIZE
+	var active_group: int = bs.active_group
 	for i in bs.slots.size():
-		var panel := _make_slot(bs.slots[i], i == active_idx)
+		# Insert a thin separator between the two groups so the player can see
+		# the TAB boundary (noun+verb | adjective+adverb).
+		if i > 0 and i % group_size == 0:
+			slot_strip.add_child(_make_group_divider())
+		var is_active: bool = (i / group_size) == active_group
+		var panel := _make_slot(bs.slots[i], is_active)
 		slot_strip.add_child(panel)
 
 func _make_slot(word: Dictionary, is_active: bool) -> Control:
@@ -104,3 +110,9 @@ func _make_slot(word: Dictionary, is_active: bool) -> Control:
 	vbox.add_child(ja_lbl)
 	panel.add_child(vbox)
 	return panel
+
+func _make_group_divider() -> Control:
+	var sep := ColorRect.new()
+	sep.custom_minimum_size = Vector2(4, 80)
+	sep.color = Color(1, 0.9, 0.6, 0.6)
+	return sep

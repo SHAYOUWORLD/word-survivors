@@ -1,6 +1,7 @@
 extends CharacterBody2D
 ## Player: move-only. HP + contact damage. pocv5 strips out EXP/level — the
-## levelling loop was replaced by the 10-kill quiz → bullet rotation cycle.
+## levelling loop was replaced by the KILLS_PER_QUIZ quiz → bullet rotation
+## cycle.
 ## BulletSystem (child node) handles all firing.
 
 const MOVE_SPEED: float = 200.0

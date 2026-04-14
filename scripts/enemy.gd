@@ -1,8 +1,8 @@
 extends CharacterBody2D
 ## Enemy: shows an English word and walks toward the player. pocv5: an enemy
 ## can only be killed by a Japanese bullet whose id matches this enemy's id.
-## On death, registers the kill with GameManager (which handles the 10-kill
-## quiz trigger) and spawns a colored particle burst.
+## On death, registers the kill with GameManager (which handles the
+## KILLS_PER_QUIZ quiz trigger) and spawns a colored particle burst.
 
 var word_data: Dictionary = {}
 var move_speed: float = 60.0

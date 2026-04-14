@@ -3,9 +3,9 @@ extends Node2D
 ## - Wires player, spawner, camera, HUD, critical callout, quiz panel.
 ## - Seeds 2 Japanese "bullet words" into the player's BulletSystem.
 ## - Receives bullet-match events via on_bullet_match() and plays big feedback.
-## - Listens for GameManager.quiz_threshold_reached (every 10 kills) and
-##   opens the 4-choice quiz. A correct answer rotates the bullet system to
-##   a fresh pair of Japanese words.
+## - Listens for GameManager.quiz_threshold_reached (every KILLS_PER_QUIZ
+##   kills) and opens the 4-choice quiz. A correct answer rotates the slot
+##   whose POS matches the quiz word to a fresh Japanese word.
 
 const FxSpawner := preload("res://scripts/fx_spawner.gd")
 
@@ -26,7 +26,7 @@ func _ready() -> void:
 
 	var bs: Node = player.get_node("BulletSystem")
 	bs.attach_to_player(player)
-	_rotate_bullet_slots(bs, [])
+	_init_bullet_slots(bs)
 
 	hud.bind_player(player)
 
@@ -94,29 +94,41 @@ func _on_quiz_answered(word_id: String, correct: bool, _is_review: bool) -> void
 	GameManager.set_state(GameManager.State.PLAYING)
 	if correct:
 		_play_big_explosion(word)
+		# Only rotate the slot whose POS matches the quiz word — other 3 stay.
 		var bs: Node = player.get_node("BulletSystem")
-		_rotate_bullet_slots(bs, bs.get_slot_ids())
+		_rotate_single_slot(bs, word.get("pos", ""))
 	else:
 		shake(8.0)
 		AudioManager.play_sfx("damage")
 
-## Picks 2 fresh Japanese words and loads them into the bullet system.
-## `exclude_ids` lets us avoid immediately re-picking the same two.
-func _rotate_bullet_slots(bs: Node, exclude_ids: Array) -> void:
-	var pool: Array = []
-	for w in WordDatabase.all_words:
-		var wid: String = w.get("id", "")
-		if wid == "" or exclude_ids.has(wid):
-			continue
-		pool.append(w)
-	if pool.size() < 2:
-		# Fallback: allow re-picking if the database is tiny.
-		pool = WordDatabase.all_words.duplicate()
+## Initializes 4 bullet slots, one per POS (noun/verb/adjective/adverb),
+## in the order defined by BulletSystem.SLOT_POS.
+func _init_bullet_slots(bs: Node) -> void:
+	var words: Array = []
+	for pos_name in bs.SLOT_POS:
+		var w: Dictionary = WordDatabase.get_random_word_by_pos(pos_name)
+		if w.is_empty():
+			# Defensive fallback: if a POS pool is empty, fill with any word.
+			w = WordDatabase.get_random_word()
+		words.append(w)
+	bs.set_slots(words)
+
+## Replaces the bullet slot matching `pos_name` with a fresh word of the same
+## POS, avoiding immediate repeats.
+func _rotate_single_slot(bs: Node, pos_name: String) -> void:
+	if pos_name == "":
+		return
+	var idx: int = bs.find_slot_by_pos(pos_name)
+	if idx < 0:
+		return
+	var current_id: String = bs.slots[idx].get("id", "") if idx < bs.slots.size() else ""
+	var pool: Array = WordDatabase.words_by_pos.get(pos_name, []).duplicate()
+	pool = pool.filter(func(w): return w.get("id", "") != current_id)
+	if pool.is_empty():
+		# Only one word exists for this POS — keep the current one.
+		return
 	pool.shuffle()
-	if pool.size() >= 2:
-		bs.set_slots(pool[0], pool[1])
-	elif pool.size() == 1:
-		bs.set_slots(pool[0], pool[0])
+	bs.set_slot(idx, pool[0])
 
 ## Screen-clearing burst played on correct quiz answer.
 func _play_big_explosion(word: Dictionary) -> void:

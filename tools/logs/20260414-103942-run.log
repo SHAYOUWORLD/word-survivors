@@ -1,4 +1,4 @@
-# Godot Run run 20260414-104047
+# Godot Run run 20260414-103942
 # Binary : C:\dev\Godot\Godot_v4.6.1-stable_win64_console.exe
 # Project: C:\dev\word-survivors
 # Args   : --path C:\dev\word-survivors
@@ -7,3 +7,7 @@ Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
 OpenGL API 3.3.0 NVIDIA 595.79 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 3090
 
 WordDatabase: loaded 20 words (stage 1: 準1級テスト)
+WARNING: ObjectDB instances leaked at exit (run with --verbose for details).
+   at: cleanup (core/object/object.cpp:2641)
+ERROR: 2 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:810)
